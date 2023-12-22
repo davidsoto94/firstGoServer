@@ -24,17 +24,20 @@ func main() {
 		fileserverHits: 0,
 	}
 	r := chi.NewRouter()
+	apiRouter := chi.NewRouter()
 	fsHandler := apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir("."))))
 	r.Handle("/app", fsHandler)
 	r.Handle("/app/*", fsHandler)
-	r.Get("/metrics/", apiCfg.handlerMetrics)
-	r.Get("/reset/", apiCfg.handlerReset)
-	r.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
+	apiRouter.Get("/metrics", apiCfg.handlerMetrics)
+	apiRouter.Get("/reset", apiCfg.handlerReset)
+	apiRouter.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Header().Set("charset", "utf-8")
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, "OK.\n")
 	})
+
+	r.Mount("/api", apiRouter)
 
 	corsMux := middlewareCors(r)
 	server := &http.Server{
